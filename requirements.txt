@@ -1,0 +1,5 @@
+#dependencies needed for the app to work
+
+ dash
+ pandas
+ plotly
