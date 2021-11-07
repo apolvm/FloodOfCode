@@ -106,61 +106,53 @@ fig.update_layout(
         'center': {'lat': 29.749907, 'lon': -95.358421},
         'zoom': 10}
 )
-
-##fig.show()
-
-#---code for dash app
+# DASH CODE
 server = Flask(__name__)
 app = dash.Dash(server=server, external_stylesheets=[dbc.themes.FLATLY])
 
 # layout
-
 fig_names = [fig]
 app.layout = dbc.Container([
-    dbc.Row(dbc.Col(html.H2("Houston Flooding Map"), width={'size':12, 'offset':0, 'order':0}), style={'textAlign': 'center', 'paddingBottom': '1%'}),
-    dbc.Row(dbc.Col(dcc.loading(children= [
+    dbc.Row(dbc.Col(html.H2("Houston Flooding Map"), width={'size': 12, 'offset': 0, 'order': 0}),
+            style={'textAlign': 'center', 'paddingBottom': '1%'}),
+    dbc.Row(dbc.Col(dcc.loading(children=[
         dcc.Graph(
-        id='Houston',
-        figure=fig),
-        dcc.Dropdown(id='layers',
-                 options=[{'label': x, 'value': x} for x in fig_names],
-                 value=None),
+            id='Houston',
+            figure=fig),
         dcc.Slider(
-        id='my_slider',
-        min=1,
-        max=12,
-        value=10,
-        marks={
-            1: 'Jan',
-            2: 'Feb',
-            3: 'Mar',
-            4: 'Apr',
-            5: 'May',
-            6: 'Jun',
-            7: 'Jul',
-            8: 'Aug',
-            9: 'Sep',
-            10: 'Oct',
-            11: 'Nov',
-            12: 'Dec'
-        })
+            id='my_slider',
+            min=1,
+            max=12,
+            value=1,
+            marks={
+                1: 'Jan',
+                2: 'Feb',
+                3: 'Mar',
+                4: 'Apr',
+                5: 'May',
+                6: 'Jun',
+                7: 'Jul',
+                8: 'Aug',
+                9: 'Sep',
+                10: 'Oct',
+                11: 'Nov',
+                12: 'Dec'
+            },
+            step=None)
 
-    ], color= '#000000', type='dot', fullscreen=True)))
+    ], color='#000000', type='dot', fullscreen=True)))
 
 ])
 
-#---------------------------------------------
+
 @app.callback(
     [dash.dependencies.Output(component_id='Houston', component_property='figure')],
-    [dash.dependencies.Input(component_id='my_slide', component_property='value'),
-     dash.dependencies.Input(component_id='layers', component_property='value')]
+    [dash.dependencies.Input(component_id='my_slide', component_property='value'), ]
 )
 def update_graph(option_selected):
     print(option_selected)
     print(type(option_selected))
 
 
-
 if __name__ == '__main__':
     app.run_server()
-
