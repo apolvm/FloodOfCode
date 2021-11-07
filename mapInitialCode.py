@@ -53,8 +53,8 @@ fig=go.Figure(go.Scattermapbox(
 #fig = px.scatter_mapbox( PUT THIS BACK TO WORK
                     lat=heatmap.lat,
                     lon=heatmap.lon,
-                    #name=heatmap.Location,
-                    hovertemplate = 'lon: %{lon} lat: %{lat} \n location: %{name}',
+                    text=heatmap.Location,
+                    #hovertemplate = 'lon: %{lon} lat: %{lat} \n location: %{name}',
                     #hover_name=heatmap.Location,
                     #zoom=10,
                     #height=500,
@@ -62,54 +62,38 @@ fig=go.Figure(go.Scattermapbox(
                      
                     ))
 
+
 # FOR EACH LINESTRING ADD A SCATTERMAPBOX
 
-# Create empty lists
-lats = []
-lons = []
-names = []
-# Shapely and numpy imports moved to top
 
-# For each feature and name in the zip of shapes. Get shapes made to be just flooded roads
-for feature, name1 in zip(shapes.iloc[0:50].geometry, shapes.iloc[0:50].FULLNAME): #Possible issue of roads being the same in multiple areas?
-    # If just a line string, put it in line strings
+for feature, name in zip(shapes.iloc[0:50].geometry, shapes.iloc[0:50].FULLNAME): #Possible issue of roads being the same in multiple areas?
+    lats = []
+    lons = []
+    names = []
     if isinstance(feature, shapely.geometry.linestring.LineString):
         linestrings = [feature]
-        # If multilinestring, run .geoms on it first
     elif isinstance(feature, shapely.geometry.multilinestring.MultiLineString):
         linestrings = feature.geoms
     else:
         continue
-    # For each line string in the line string list, go over the data shown
     for linestring in linestrings:
         x, y = linestring.xy
         lats = np.append(lats, y)
         lons = np.append(lons, x)
-        names = np.append(names, [name1]*len(y))
+        names = np.append(names, name)
         lats = np.append(lats, None)
         lons = np.append(lons, None)
         names = np.append(names, None)
     # https://plotly.github.io/plotly.py-docs/generated/plotly.graph_objects.Scattermapbox.html
-    # Add trace of the line
-    fig.add_trace(go.Scattermapbox(mode='lines',lat=lats, lon=lons,name=name1))
+    print(name)
+    fig.add_trace(go.Scattermapbox(mode='lines',lat=lats, lon=lons, name=name))
+    
 
 
 
 
 
-# Possible method to look at
-"""for i in range(100):
-    fig.add_trace(
-        go.Scattergeo(
-            locationmode = 'USA-states',
-            lon = list(shapes['geometry'][i].coords)[0],
-            lat = list(shapes['geometry'][i].coords)[1],
-            
-            mode = 'lines',
-            line = dict(width = 1,color = 'red'),
-            #opacity = float(df_flight_paths['cnt'][i]) / float(df_flight_paths['cnt'].max()),
-        )
-    )"""
+
 
 # Update layout to have margin, a title, specified width, and certain display type.
 fig.update_layout (
@@ -121,11 +105,10 @@ fig.update_layout (
     mapbox = {
         
         'style': display_type,
-        
-        'zoom': 5}
+        'center':{'lat':29.749907,'lon':-95.358421},
+        'zoom': 10}
 )
 
-# Display figure. Removed when using dash.
-fig.show()
 
+fig.show()
 
