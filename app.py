@@ -8,6 +8,11 @@ import datetime
 import json
 import shapely
 import numpy as np
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+import dash_bootstrap_components as dbc
+from flask import Flask
 
 # Need the latest version of plotly. Check with following
 # print(plotly.__version__)
@@ -105,30 +110,22 @@ fig.update_layout(
 ##fig.show()
 
 #---code for dash app
-import dash
-import dash_core_components as dcc
-import dash_html_components as html
-
-
-app = dash.Dash(__name__)
+server = Flask(__name__)
+app = dash.Dash(server=server, external_stylesheets=[dbc.themes.FLATLY])
 
 # layout
 
 fig_names = [fig]
-app.layout = html.Div([
-    html.H1('Houston Flooding Data'),
-
-    html.Div(id= 'output_container', children=[]),
-    html.Br(),
-
-    dcc.Graph(
+app.layout = dbc.Container([
+    dbc.Row(dbc.Col(html.H2("Houston Flooding Map"), width={'size':12, 'offset':0, 'order':0}), style={'textAlign': 'center', 'paddingBottom': '1%'}),
+    dbc.Row(dbc.Col(dcc.loading(children= [
+        dcc.Graph(
         id='Houston',
-        figure=fig
-    ),
-    dcc.Dropdown(id='layers',
+        figure=fig),
+        dcc.Dropdown(id='layers',
                  options=[{'label': x, 'value': x} for x in fig_names],
                  value=None),
-    dcc.Slider(
+        dcc.Slider(
         id='my_slider',
         min=1,
         max=12,
@@ -146,14 +143,15 @@ app.layout = html.Div([
             10: 'Oct',
             11: 'Nov',
             12: 'Dec'
-        }
-    )
+        })
+
+    ], color= '#000000', type='dot', fullscreen=True)))
+
 ])
 
 #---------------------------------------------
 @app.callback(
-    [dash.dependencies.Output(component_id='output_container', component_property='children'),
-     dash.dependencies.Output(component_id='Houston', component_property='figure')],
+    [dash.dependencies.Output(component_id='Houston', component_property='figure')],
     [dash.dependencies.Input(component_id='my_slide', component_property='value'),
      dash.dependencies.Input(component_id='layers', component_property='value')]
 )
@@ -164,5 +162,5 @@ def update_graph(option_selected):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server()
 
