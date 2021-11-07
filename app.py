@@ -8,6 +8,7 @@ import datetime
 import json
 import shapely
 import numpy as np
+from dash.dependencies import Output, Input, State
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -110,44 +111,36 @@ fig.update_layout(
 server = Flask(__name__)
 app = dash.Dash(server=server, external_stylesheets=[dbc.themes.FLATLY])
 
-# layout
-fig_names = [fig]
+# LAYOUT
 app.layout = dbc.Container([
     dbc.Row(dbc.Col(html.H2("Houston Flooding Map"), width={'size': 12, 'offset': 0, 'order': 0}),
             style={'textAlign': 'center', 'paddingBottom': '1%'}),
-    dbc.Row(dbc.Col(dcc.loading(children=[
-        dcc.Graph(
-            id='Houston',
-            figure=fig),
-        dcc.Slider(
-            id='my_slider',
-            min=1,
-            max=12,
-            value=1,
-            marks={
-                1: 'Jan',
-                2: 'Feb',
-                3: 'Mar',
-                4: 'Apr',
-                5: 'May',
-                6: 'Jun',
-                7: 'Jul',
-                8: 'Aug',
-                9: 'Sep',
-                10: 'Oct',
-                11: 'Nov',
-                12: 'Dec'
-            },
-            step=None)
+    dbc.Row(dbc.Col(dcc.loading(children=[dcc.Graph(id='Houston', figure=fig),
+                                          dcc.Slider(id='my_slider',
+                                                     min=1, max=12, value=1,
+                                                     marks={1: 'Jan',
+                                                            2: 'Feb',
+                                                            3: 'Mar',
+                                                            4: 'Apr',
+                                                            5: 'May',
+                                                            6: 'Jun',
+                                                            7: 'Jul',
+                                                            8: 'Aug',
+                                                            9: 'Sep',
+                                                            10: 'Oct',
+                                                            11: 'Nov',
+                                                            12: 'Dec'
+                                                            },
+                                                     step=None)
 
-    ], color='#000000', type='dot', fullscreen=True)))
+                                          ], color='#000000', type='dot', fullscreen=True)))
 
 ])
 
 
 @app.callback(
-    [dash.dependencies.Output(component_id='Houston', component_property='figure')],
-    [dash.dependencies.Input(component_id='my_slide', component_property='value'), ]
+    [Output(component_id='Houston', component_property='figure')],
+    [Input(component_id='my_slide', component_property='value'), ]
 )
 def update_graph(option_selected):
     print(option_selected)
