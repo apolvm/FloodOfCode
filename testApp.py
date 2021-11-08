@@ -1,54 +1,123 @@
-from dash.dependencies import Output, Input, State
-import dash_core_components as dcc
-import dash_bootstrap_components as dbc
-import dash_html_components as html
-import plotly.express as px
-from flask import Flask
-import pandas as pd
-import dash
-
+# Import needed modules
 import plotly.express as px
 import plotly
 import plotly.graph_objects as go
 import pandas
-
 import geopandas as gpd
 import datetime
 import json
 import shapely
 import numpy as np
 
-server = Flask(__name__)
-app = dash.Dash(server=server, external_stylesheets=[dbc.themes.FLATLY])
-app.title = 'Dashboard'
 
-df = pd.read_csv('https://raw.githubusercontent.com/plotly/datasets/master/gapminderDataFiveYear.csv')
 # Future proofing if we find easy way to add sattelite image
 display_type = "open-street-map"
 
 # Get the shapefile into a geopandas
-shapes = gpd.read_file('tl_2018_48201_roads.shp')
+shapes = gpd.read_file('roadData/tl_2018_48201_roads.shp')
+
+
+
 
 # Get the heatmap data
 heatmap = pandas.read_csv('floodingheatmap12m.csv', sep='|')
 
-# CREATE FIGURE AS SCATTER MAPBOX OF THE HEATMAP
-# https://plotly.com/python/lines-on-mapbox/
-fig = go.Figure(go.Scattermapbox(
-    # fig = go.Figure()
-    # fig = px.scatter_mapbox( PUT THIS BACK TO WORK
-    lat=heatmap.lat,
-    lon=heatmap.lon,
-    text=heatmap.Location,
-    # hovertemplate = 'lon: %{lon} lat: %{lat} \n location: %{name}',
-    # hover_name=heatmap.Location,
-    # zoom=10,
-    # height=500,
-    # width = 500,
 
-))
-for feature, name in zip(shapes.iloc[0:50].geometry,
-                        shapes.iloc[0:50].FULLNAME):  # Possible issue of roads being the same in multiple areas?
+def fixTimes(column):
+    for i in heatmap.index:
+        data = heatmap.iloc[i][column]
+        data = data.replace('-',' ').replace(':',' ').replace('.',' ')
+        data = data.split(' ')
+        for num in range(len(data)):
+        
+            data[num] = int(data[num])
+    
+        heatmap.at[i,column] = datetime.datetime(data[0],data[1],data[2],data[3],data[4],data[5])
+fixTimes('Create Date')
+month = 12
+found = False
+indexsWithMonth = []
+heatmap = heatmap.sort_values(by = 'Create Date')
+
+# Get the indexes of the flood events occuring in the selected month.
+for index, row in enumerate(heatmap['Create Date']):
+    if month == row.month:
+        indexsWithMonth.append(index)
+        found = True
+        
+    
+    
+    else:
+        if found:
+            print('break')
+            break
+        else:
+            pass
+
+        
+# print(heatmap)
+    
+
+#heatmap.rename(columns = {"Create Date":'createDate', "Closed Date":'closedDate'},inplace= "True")
+
+
+# Heatmap data to a GeoDataFrame
+heatmap_gdf = gpd.GeoDataFrame(
+    heatmap, geometry=gpd.points_from_xy(heatmap.lon, heatmap.lat))
+
+# Get it to right format
+heatmap_gdf = heatmap_gdf.set_crs('epsg:4326')
+
+# Get another copy of shapes (roads) before messing with it
+before_shapes = shapes.copy(deep=True)
+
+# Drop some unneeded columns before the sjoin
+#shapes = shapes.drop(columns=['LINEARID','RTTYP','MTFCC'])
+
+
+# enumerate example for my own later use
+# for i,linestring in enumerate(shapes['geometry']):
+#     shapes['geometry'][i] = linestring.convex_hull
+
+# Create a buffer on shapes.geometry
+shapes.geometry = shapes.buffer(.0002)
+
+# Spatial join the roads gdf and the heatmap gdf 
+flooded_roads = gpd.sjoin(shapes,heatmap_gdf.iloc[indexsWithMonth[0]:indexsWithMonth[-1]],'inner',predicate='contains')
+
+# Get all the indexes of roads that 
+
+fr_index = list(flooded_roads.index.values)
+
+
+
+# CREATE FIGURE AS SCATTER MAPBOX OF THE HEATMAP
+#https://plotly.com/python/lines-on-mapbox/
+fig=go.Figure(go.Scattermapbox(
+                    lat=heatmap.lat,
+                    lon=heatmap.lon,
+                    text=heatmap.Location,
+                    marker=go.scattermapbox.Marker(
+                    size=10
+                    ),
+                    hoverlabel=go.scattermapbox.Hoverlabel(
+                        bgcolor='darkslateblue',
+                        bordercolor='lightgrey'
+                    )))
+
+
+
+
+# # Get all the indexes of roads that 
+
+
+for i in fr_index: #Change back to list(fr_index)
+    
+    feature= before_shapes.iloc[i].geometry
+
+    name = before_shapes.iloc[i].FULLNAME
+    #print(f"{feature} name {name}")
+    # Prints poly gon and name
     lats = []
     lons = []
     names = []
@@ -67,43 +136,84 @@ for feature, name in zip(shapes.iloc[0:50].geometry,
         lons = np.append(lons, None)
         names = np.append(names, None)
     # https://plotly.github.io/plotly.py-docs/generated/plotly.graph_objects.Scattermapbox.html
+    #print(name)
+    
+    fig.add_trace(go.Scattermapbox(mode='lines',lat=lats, lon=lons, name=name,line=go.scattermapbox.Line(
+    color = 'aqua',
+    width = 2)))
+    
 
-fig.add_trace(go.Scattermapbox(mode='lines', lat=lats, lon=lons, name=name))
+#display_type = 1;
+if display_type == 'open-street-map':
+    fig.update_layout (
+        #mapbox_style=display_type,
+        margin={"r":0,"t":0,"l":0,"b":0},
+        title = 'Houston Flooding',
+        width = 800,
+        height = 600,
+        mapbox = {
+        
+            'style': display_type,
+            'center':{'lat':29.749907,'lon':-95.358421},
+            'zoom': 10}
+    )
+else:
+    fig.update_layout(
+    mapbox_style=display_type,
+    mapbox_layers=[
+        {
+            "below": 'traces',
+            "sourcetype": "raster",
+            "sourceattribution": "United States Geological Survey",
+            "source": [
+                "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}"
+            ]
+        }
+        # {
+        #     "sourcetype": "raster",
+        #     "sourceattribution": "Government of Canada",
+        #     "source": ["https://geo.weather.gc.ca/geomet/?"
+        #                "SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&BBOX={bbox-epsg-3857}&CRS=EPSG:3857"
+        #                "&WIDTH=1000&HEIGHT=1000&LAYERS=RADAR_1KM_RDBR&TILED=true&FORMAT=image/png"],
+        # }
+      ])
 
 
-fig.update_layout(
-    # mapbox_style=display_type,
-    margin={"r": 0, "t": 0, "l": 0, "b": 0},
-    title='Houston Flooding',
-    width=500,
-    height=500,
-    mapbox={
-        'style': display_type,
-        'center': {'lat': 29.749907, 'lon': -95.358421},
-        'zoom': 10}
-)
-fig= update_figure()
+##fig.show()
 
+#---code for dash app
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+import dash_bootstrap_components as dbc
+from dash.dependencies import Output, Input, State
+from flask import Flask
+server = Flask(__name__)
+app = dash.Dash(server=server, external_stylesheets=[dbc.themes.FLATLY])
+app.title = 'Dashboard'
+
+# layout
+
+fig_names = [fig]
 app.layout = dbc.Container([ 
 
-    dbc.Row(dbc.Col(html.H2("Houston Flooding Map"), width={'size': 12, 'offset': 0, 'order': 0}), 
-    style = {'textAlign': 'center', 'paddingBottom': '1%'}),
+    dbc.Row(dbc.Col(html.H2("Houston Flooding Map"), width={'size': 12, 'offset': 0, 'order': 0}), style = {'textAlign': 'center', 'paddingBottom': '1%'}),
 
     dbc.Row(dbc.Col(dcc.Loading(children=[dcc.Graph(id='Houston', figure=fig),
-                                          dcc.Slider(id='my_slider',min=1, max=12,value=10,
-                                          marks={
-                                              1: 'Jan',
-                                              2: 'Feb',
-                                              3: 'Mar',
-                                              4: 'Apr',
-                                              5: 'May',
-                                              6: 'Jun',
-                                              7: 'Jul',
-                                              8: 'Aug',
-                                              9: 'Sep',
-                                              10: 'Oct',
-                                              11: 'Nov',
-                                              12: 'Dec'})
+                                          dcc.Slider(id='my_slider',min=1, max=12,value=10,marks={
+            1: 'Jan',
+            2: 'Feb',
+            3: 'Mar',
+            4: 'Apr',
+            5: 'May',
+            6: 'Jun',
+            7: 'Jul',
+            8: 'Aug',
+            9: 'Sep',
+            10: 'Oct',
+            11: 'Nov',
+            12: 'Dec'
+        })
                                         ], color = '#000000', type = 'dot', fullscreen=True ) ))
 ])
 
@@ -112,63 +222,24 @@ app.layout = dbc.Container([
      Output(component_id='Houston', component_property='figure')],
     [Input(component_id='my_slider', component_property='value')]
 )
-def update_figure(selected_year):
-    
-    # Future proofing if we find easy way to add sattelite image
-    display_type = "open-street-map"
+def update_graph(option_selected):
+    print(option_selected)
+    print(type(option_selected))
 
-    # CREATE FIGURE AS SCATTER MAPBOX OF THE HEATMAP
-    # https://plotly.com/python/lines-on-mapbox/
-    fig = go.Figure(go.Scattermapbox(
-        # fig = go.Figure()
-        # fig = px.scatter_mapbox( PUT THIS BACK TO WORK
-        lat=heatmap.lat,
-        lon=heatmap.lon,
-        text=heatmap.Location,
-        # hovertemplate = 'lon: %{lon} lat: %{lat} \n location: %{name}',
-        # hover_name=heatmap.Location,
-        # zoom=10,
-        # height=500,
-        # width = 500,
-
-    ))
-    for feature, name in zip(shapes.iloc[0:50].geometry,
-                            shapes.iloc[0:50].FULLNAME):  # Possible issue of roads being the same in multiple areas?
-        lats = []
-        lons = []
-        names = []
-        if isinstance(feature, shapely.geometry.linestring.LineString):
-            linestrings = [feature]
-        elif isinstance(feature, shapely.geometry.multilinestring.MultiLineString):
-            linestrings = feature.geoms
-        else:
-            continue
-        for linestring in linestrings:
-            x, y = linestring.xy
-            lats = np.append(lats, y)
-            lons = np.append(lons, x)
-            names = np.append(names, name)
-            lats = np.append(lats, None)
-            lons = np.append(lons, None)
-            names = np.append(names, None)
-        # https://plotly.github.io/plotly.py-docs/generated/plotly.graph_objects.Scattermapbox.html
-    
-    fig.add_trace(go.Scattermapbox(mode='lines', lat=lats, lon=lons, name=name))
-
-    
+def update_map(disptype):
     fig.update_layout(
-        # mapbox_style=display_type,
-        margin={"r": 0, "t": 0, "l": 0, "b": 0},
-        title='Houston Flooding',
-        width=500,
-        height=500,
-        mapbox={
-            'style': display_type,
-            'center': {'lat': 29.749907, 'lon': -95.358421},
-            'zoom': 10}
-    )
+    # mapbox_style=display_type,
+    margin={"r": 0, "t": 0, "l": 0, "b": 0},
+    title='Houston Flooding'+str(disptype),
+    width=500,
+    height=500,
+    mapbox={
 
-    return fig
+        'style': disptype,
+        'center': {'lat': 29.749907, 'lon': -95.358421},
+        'zoom': 10}
+)
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     app.run_server(debug=True)
