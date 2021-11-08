@@ -7,10 +7,11 @@ Floods account for more than $1 billion in property losses in the United States 
 Flooding is part of St. Louis with records of six major floodings since 2008 and two record-setting floods in the last three years alone. Our goal is to help the St. Louis community acessing information about floded streets which will allow them to avoid delays in their daily lives.
 
 ## Files Description
-Dockerfile - commands needed in order to build a docker container
-requirements.txt - modules the main app needs to deploy
-app.py - map creation and dash application
-houston-roads.zip - data about Houston's roads
+Dockerfile: commands needed in order to build a docker container
+requirements.txt: modules the main app needs to deploy
+app.py: map creation and dash application
+houston-roads.zip: data about Houston's roads
+floodingheatmap12m.csv: flooding data for 2021
 
 ## Future Work
 -Using real time data
