@@ -61,6 +61,7 @@ app.layout = dbc.Container([
 )
 
 def update_figure(month):
+    print(str(month))
     heatmap = pandas.read_csv('floodingheatmap12m.csv', sep='|')
     for i in heatmap.index:
         data = heatmap.iloc[i]['Create Date']
@@ -79,14 +80,7 @@ def update_figure(month):
     for index, row in enumerate(heatmap['Create Date']):
         if month == row.month:
             indexsWithMonth.append(index)
-            found = True
-            
-        else:
-            if found:
-                print('break')
-                break
-            else:
-                pass
+
 
     # Heatmap data to a GeoDataFrame
     heatmap_gdf = gpd.GeoDataFrame(
@@ -152,14 +146,14 @@ def update_figure(month):
         
         fig.add_trace(go.Scattermapbox(mode='lines',lat=lats, lon=lons, name=name,line=go.scattermapbox.Line(
         color = 'aqua',
-        width = 2)))
+        width = 5)))
 
     fig.update_layout(
         # mapbox_style=display_type,
         margin={"r": 0, "t": 0, "l": 0, "b": 0},
         title='Houston Flooding',
-        width=500,
-        height=500,
+        width=800,
+        height=600,
         mapbox={
             'style': 'open-street-map',
             'center': {'lat': 29.749907, 'lon': -95.358421},
