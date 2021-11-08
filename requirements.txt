@@ -50,7 +50,7 @@ comtypes==1.1.9
 conda==4.10.1
 conda-build==3.21.4
 conda-content-trust==0.1.1
-conda-env=2.6.0=1
+conda-env==2.6.0
 conda-package-handling==1.7.3
 conda-repo-cli==1.0.4
 conda-token==0.3.0
