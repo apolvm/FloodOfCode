@@ -21,7 +21,6 @@ beautifulsoup4==4.9.3
 bitarray==1.9.2
 bkcharts==0.2
 black==19.10b0
-blas==1.0
 bleach==3.3.0
 blosc==1.21.0
 bokeh==2.3.2
