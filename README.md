@@ -11,7 +11,7 @@ Dockerfile: commands needed in order to build a docker container <br />
 requirements.txt: modules the main app needs to deploy <br /> 
 app.py: map creation and dash application <br /> 
 houston-roads.zip: data about Houston's roads <br /> 
-floodingheatmap12m.csv: flooding data for 2021 <br /> 
+floodingheatmap12m.csv: flooding data for July 2020 through June 2021 <br /> 
 
 ## Future Work
 -Using real time data <br /> 
