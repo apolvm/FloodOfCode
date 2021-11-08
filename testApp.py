@@ -25,11 +25,6 @@ app.title = 'Dashboard'
 # Future proofing if we find easy way to add sattelite image
 display_type = "open-street-map"
 
-# Get the shapefile into a geopandas
-shapes = gpd.read_file('tl_2018_48201_roads.shp')
-
-# Get the heatmap data
-heatmap = pandas.read_csv('floodingheatmap12m.csv', sep='|')
 
 
 app.layout = dbc.Container([ 
@@ -62,7 +57,12 @@ app.layout = dbc.Container([
 
 def update_figure(month):
     print(str(month))
+    # Get the shapefile into a geopandas
+    shapes = gpd.read_file('tl_2018_48201_roads.shp')
+
+    # Get the heatmap data
     heatmap = pandas.read_csv('floodingheatmap12m.csv', sep='|')
+
     for i in heatmap.index:
         data = heatmap.iloc[i]['Create Date']
         data = data.replace('-',' ').replace(':',' ').replace('.',' ')
