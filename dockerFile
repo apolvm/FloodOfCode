@@ -1,11 +1,15 @@
-FROM python:3.8
+FROM python:3.8-slim-buster
 
-ENV APP_Home / app
-WORKDIR $APP_Home
-COPY . ./
 
-RUN pip install -r requirements.txt
+RUN apt-get update
+RUN apt-get install nano
 
-EXPOSE $PORT
+RUN mkdir wd
+WORKDIR wd
+COPY app/requirements.txt .
+RUN pip3 install -r requirements.txt
 
-CMD python app.py
+RUN ls
+COPY app/ ./
+
+CMD [ "gunicorn", "--workers=5", "--threads=1", "-b 0.0.0.0:80", "app:server"]
